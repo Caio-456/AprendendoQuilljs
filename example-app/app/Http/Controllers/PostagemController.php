@@ -1,10 +1,9 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Models\Mineral;
+
 use Illuminate\Http\Request;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\JsonResponse; 
+use App\Models\Postagem;
 use Inertia\Inertia;
 
 class PostagemController extends Controller
@@ -14,8 +13,8 @@ class PostagemController extends Controller
      */
     public function index()
     {
-        $postagens = Mineral::with('fotos')->get();
-        return Inertia::render('Dashboard/Minerais/Index', ['postagens'=>$postagens]);
+        $postagens = Postagem::all();
+        return Inertia::render('Index', compact('postagens'));
     }
 
     /**
@@ -31,87 +30,53 @@ class PostagemController extends Controller
      */
     public function store(Request $request)
     {
-        $mineral = new Mineral;
-        $mineral -> nome = $request -> nome;
-        $mineral -> descricao = $request -> descricao;
-        $mineral -> propriedades = $request -> propriedades;
-        $mineral -> save();
-        
-        if ($request->hasFile('foto')) {
-            $fotosRequest = new Request([
-                "idMineral" => $mineral->id,
-                "capa_nome" => $request->input('capa_nome'),
-            ]);
+        $request->validate([
+            'titulo' => 'required',
+            'descricao' => 'required',
+        ]);
 
-            // Encaminha os arquivos
-            $fotosRequest->files->set('foto', $request->file('foto'));
+        Postagem::create($request->all());
 
-            // Chama o controller de fotos
-            app(\App\Http\Controllers\FotosController::class)->store($fotosRequest);
-        }
-        return redirect('/postagens/');
+        return redirect()->route('postagem.index')->with('success', 'Postado com sucesso.');
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Postagem $postagem)
+    {
+        //
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit($id)
+    public function edit(Postagem $postagem)
     {
-        $mineral = Mineral::with('fotos')->findOrFail($id);
-        return Inertia::render('Dashboard/Minerais/Edit', ['mineral' => $mineral]);
+        return Inertia::render('Edit', ['postagem'=>$postagem]);
     }
-    
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Mineral $mineral)
+    public function update(Request $request, Postagem $post)
     {
-        $mineral = Mineral::with('fotos')->findOrFail($request->id);
-        $request->validate([
-            'nome' => 'sometimes|required|string|max:255',
-            'descricao' => 'nullable|string',
-            'propriedades' => 'nullable|string',
+         $request->validate([
+            'titulo' => 'required',
+            'descricao' => 'required',
         ]);
 
-        // Atualizando apenas os campos que foram enviados
-        if ($request->filled('nome')) {
-            $mineral->nome = $request->nome;
-        }
+        $postagem->update($request->all());
 
-        if ($request->filled('descricao')) {
-            $mineral->descricao = $request->descricao;
-        }
-
-        if ($request->filled('propriedades')) {
-            $mineral->propriedades = $request->propriedades;
-        }
-
-        $mineral->save();
-
-        return redirect()->route('postagens.index')->with('success', 'Mineral atualizado com sucesso!');
+        return redirect()->route('postagem.index')->with('success', 'Postagem atualizada com sucesso.');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy($mineral)
+    public function destroy(Postagem $postagem)
     {
-        $mineral = Mineral::findOrFail($mineral);  // Buscar o mineral, antes de alterar os dados
-        foreach ($mineral->fotos as $foto) {
-            app(\App\Http\Controllers\FotosController::class)->destroy($foto->id);
-
-        }
-        
-        $mineral->delete();
-        $postagens = Mineral::paginate(10);  // 10 rochas por página
-
-        return redirect()->route('postagens.index', 'minerals')->with('success', 'Mineral deletado com sucesso!');
+        $postagem->delete();
+        return redirect()->route('postagem.index')->with('success', 'Postagem apagada.');
     }
-    public function site(){
-        $postagens = Mineral::with("fotos")->get();
-        return view('Minerais',compact("postagens"));
-    
-    }
-
 }
