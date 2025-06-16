@@ -53,13 +53,14 @@ class PostagemController extends Controller
      */
     public function edit(Postagem $postagem)
     {
+        $postagens = Postagem::all();
         return Inertia::render('Edit', ['postagem'=>$postagem]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Postagem $post)
+    public function update(Request $request, Postagem $postagem)
     {
          $request->validate([
             'titulo' => 'required',
